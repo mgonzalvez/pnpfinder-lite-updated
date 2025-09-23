@@ -1,4 +1,4 @@
-// public/game.js (fixed)
+// public/game.js (robust)
 const F = {
   title: "GAME TITLE",
   designer: "DESIGNER",
@@ -31,7 +31,6 @@ const F = {
 
 function norm(v){ return (v ?? "").toString().trim(); }
 function lower(v){ return norm(v).toLowerCase(); }
-
 function slugify(s) {
   const base = norm(s).toLowerCase()
     .replace(/&/g, " and ")
@@ -39,7 +38,9 @@ function slugify(s) {
     .replace(/(^-|-$)/g, "");
   return base || "untitled";
 }
-
+function buildSlug(row){
+  return slugify(`${row[F.title]}-${row[F.publisher] || ""}-${row[F.year] || ""}`);
+}
 function parsePlayers(s) {
   const txt = lower(s);
   if (!txt) return { min: null, max: null };
@@ -52,7 +53,6 @@ function parsePlayers(s) {
   }
   return { min: null, max: null };
 }
-
 function normalizePriceType(s) {
   const t = lower(s);
   if (t.includes("free")) return "Free";
@@ -60,15 +60,9 @@ function normalizePriceType(s) {
   if (t) return "Paid";
   return "-";
 }
-
 function domainFromUrl(url) {
   try { return new URL(url).hostname.replace(/^www\./,''); } catch { return ""; }
 }
-
-function makeSlugForRow(row) {
-  return slugify(`${row[F.title]}-${row[F.publisher] || ""}-${row[F.year] || ""}`);
-}
-
 function el(tag, className, html) {
   const e = document.createElement(tag);
   if (className) e.className = className;
@@ -76,110 +70,86 @@ function el(tag, className, html) {
   return e;
 }
 
-function renderDetail(item) {
+function renderDetail(item, debugNote) {
   const wrap = document.getElementById("game");
   wrap.innerHTML = "";
   if (!item) {
-    wrap.innerHTML = "<p>Game not found.</p>";
+    wrap.innerHTML = `<p>Game not found.</p>${debugNote ? `<pre style="opacity:.6;white-space:pre-wrap">${debugNote}</pre>` : ""}`;
     return;
   }
 
-  const left = document.createElement("div");
-  const right = document.createElement("div");
+  const left = el("div");
+  const right = el("div");
 
-  const img = document.createElement("img");
-  img.className = "cover";
+  const img = el("img", "cover");
   img.alt = `${norm(item[F.title])} cover`;
   img.loading = "lazy";
   img.src = norm(item[F.image]) || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
   left.appendChild(img);
 
-  const h1 = document.createElement("h1");
-  h1.textContent = norm(item[F.title]) || "Untitled";
+  const h1 = el("h1", null, norm(item[F.title]) || "Untitled");
 
   const { min: pmin, max: pmax } = parsePlayers(item[F.players]);
   const players = `${pmin ?? "?"}–${pmax ?? "?"}p`;
-  const meta = document.createElement("div");
-  meta.className = "meta";
-  meta.innerHTML = `<span>${players}</span><span>${norm(item[F.playtime]) || "-"}</span><span>${normalizePriceType(item[F.priceType])}</span><span>${norm(item[F.price]) || "-"}</span>`;
+  const meta = el("div", "meta", `<span>${players}</span><span>${norm(item[F.playtime]) || "-"}</span><span>${normalizePriceType(item[F.priceType])}</span><span>${norm(item[F.price]) || "-"}</span>`);
 
-  const byline = document.createElement("div");
-  byline.className = "meta";
-  byline.innerHTML = [
+  const byline = el("div", "meta", [
     `Designer: ${norm(item[F.designer]) || "-"}`,
     `Publisher: ${norm(item[F.publisher]) || "-"}`,
     `Year: ${norm(item[F.year]) || "-"}`,
     `Age: ${norm(item[F.ageRange]) || "-"}`
-  ].map(s => `<span>${s}</span>`).join("");
+  ].map(s => `<span>${s}</span>`).join(""));
 
-  const chips = document.createElement("div");
-  chips.className = "chips";
+  const chips = el("div", "chips");
   [norm(item[F.mech1]), norm(item[F.mech2]), norm(item[F.mode]), norm(item[F.complexity]), norm(item[F.category])]
     .filter(Boolean)
-    .forEach(text => {
-      const s = document.createElement("span");
-      s.className = "chip";
-      s.textContent = text;
-      chips.appendChild(s);
-    });
+    .forEach(text => chips.appendChild(el("span", "chip", text)));
 
-  const desc = document.createElement("div");
-  desc.className = "section";
-  const short = norm(item[F.shortDesc]);
-  const long = norm(item[F.description]);
-  desc.innerHTML = `${short ? `<p>${short}</p>` : ""}${long ? `<p>${long.replace(/\n/g, "<br/>")}</p>` : ""}`;
+  const desc = el("div", "section",
+    `${norm(item[F.shortDesc]) ? `<p>${norm(item[F.shortDesc])}</p>` : ""}` +
+    `${norm(item[F.description]) ? `<p>${norm(item[F.description]).replace(/\n/g, "<br/>")}</p>` : ""}`
+  );
 
-  const build = document.createElement("div");
-  build.className = "section";
-  build.innerHTML = `
+  const build = el("div", "section", `
     <h3>Build & Components</h3>
     <p><strong>Crafting Difficulty:</strong> ${norm(item[F.craftLevel]) || "-"}</p>
     <p><strong>Print Components:</strong> ${norm(item[F.printComponents]) || "-"}</p>
     <p><strong>Other Components:</strong> ${norm(item[F.otherComponents]) || "-"}</p>
-  `;
+  `);
 
-  const misc = document.createElement("div");
-  misc.className = "section";
-  misc.innerHTML = `
+  const misc = el("div", "section", `
     <h3>Theme & Languages</h3>
     <p><strong>Theme:</strong> ${norm(item[F.theme]) || "-"}</p>
     <p><strong>Languages:</strong> ${norm(item[F.languages]) || "-"}</p>
-  `;
+  `);
 
-  const links = document.createElement("div");
-  links.className = "actions";
+  const links = el("div", "actions");
   const link1 = norm(item[F.link1]);
   const link2 = norm(item[F.link2]);
   if (link1) {
-    const a1 = document.createElement("a");
-    a1.className = "btn primary";
+    const a1 = el("a", "btn primary", `Open on ${domainFromUrl(link1) || "Site"}`);
     a1.href = link1; a1.target = "_blank"; a1.rel = "noopener";
-    try { a1.textContent = `Open on ${new URL(link1).hostname.replace(/^www\./,'')}`; } catch { a1.textContent = "Open link"; }
     links.appendChild(a1);
   }
   if (link2) {
-    const a2 = document.createElement("a");
-    a2.className = "btn";
+    const a2 = el("a", "btn", `Alt link (${domainFromUrl(link2) || "Site"})`);
     a2.href = link2; a2.target = "_blank"; a2.rel = "noopener";
-    try { a2.textContent = `Alt link (${new URL(link2).hostname.replace(/^www\./,'')})`; } catch { a2.textContent = "Alt link"; }
     links.appendChild(a2);
   }
 
-  const admin = document.createElement("div");
-  admin.className = "section";
-  const curated = norm(item[F.curated]);
-  const dead = norm(item[F.deadlink]);
-  const dateAdded = norm(item[F.dateAdded]);
-  const deadLinkHtml = dead && /^https?:\/\//i.test(dead) ? `<a href="${dead}" target="_blank" rel="noopener">Report a dead link</a>` : (dead || "-");
-  admin.innerHTML = `
+  const admin = el("div", "section", `
     <h3>Meta</h3>
-    <p><strong>Curated lists:</strong> ${curated || "-"}</p>
-    <p><strong>Report dead link:</strong> ${deadLinkHtml}</p>
-    <p><strong>Date added:</strong> ${dateAdded || "-"}</p>
-  `;
+    <p><strong>Curated lists:</strong> ${norm(item[F.curated]) || "-"}</p>
+    <p><strong>Report dead link:</strong> ${
+      (function(){
+        const val = norm(item[F.deadlink]);
+        return /^https?:\/\//i.test(val) ? `<a href="${val}" target="_blank" rel="noopener">Report a dead link</a>` : (val || "-");
+      })()
+    }</p>
+    <p><strong>Date added:</strong> ${norm(item[F.dateAdded]) || "-"}</p>
+  `);
 
-  const table = document.createElement("div");
-  table.className = "section";
+  const table = el("div", "section");
   const entries = Object.entries(item || {});
   const rows = entries.map(([k, v]) => {
     const val = (v ?? "").toString().trim();
@@ -204,25 +174,42 @@ function renderDetail(item) {
   wrap.appendChild(right);
 }
 
-}
-
 async function load() {
-  const slug = new URLSearchParams(location.search).get("slug");
   const elWrap = document.getElementById("game");
-  if (!slug) {
-    elWrap.innerHTML = "<p>Missing slug.</p>";
-    return;
-  }
+  const slug = new URLSearchParams(location.search).get("slug");
+  if (!slug) { elWrap.innerHTML = "<p>Missing slug.</p>"; return; }
+
   try {
     const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
+    if (!res.ok) throw new Error("API error " + res.status);
     const csv = await res.text();
     const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-    const rows = parsed.data;
-    const row = rows.find(r => makeSlugForRow(r) === slug);
+    const rows = (parsed.data || []).filter(r => r && Object.values(r).some(v => (v ?? "").toString().trim() !== ""));
+
+    // Primary match: exact slug
+    let row = rows.find(r => buildSlug(r) === slug);
+
+    // Fallback 1: decode and compare
+    if (!row) {
+      const s = decodeURIComponent(slug);
+      row = rows.find(r => buildSlug(r) === s);
+    }
+
+    // Fallback 2: match on title if publisher/year missing
+    if (!row) {
+      const target = lower(slug.replace(/-/g, " "));
+      row = rows.find(r => lower(r[F.title]).includes(target));
+    }
+
+    if (!row) {
+      renderDetail(null, `No row matched slug: ${slug}`);
+      return;
+    }
+
     renderDetail(row);
   } catch (e) {
-    elWrap.innerHTML = "<p>Failed to load game.</p>";
     console.error(e);
+    elWrap.innerHTML = "<p>Failed to load game.</p>";
   }
 }
 
