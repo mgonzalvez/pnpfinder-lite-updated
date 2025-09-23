@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PnP Finder (CSV Edition)</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-19" />
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-20" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -13,7 +13,6 @@
     <p class="tagline">Browse community-submitted print-and-play games. Use filters to narrow your search.</p>
 
     <form id="filters" class="filters" aria-label="Filter games">
-      <!-- Row 1 -->
       <div class="row">
         <input id="q" name="q" type="search" placeholder="Search title, designer, publisher..." aria-label="Search" />
         <select id="curated" name="curated" aria-label="Curated list">
@@ -26,8 +25,6 @@
           <option value="year">Release Year</option>
         </select>
       </div>
-
-      <!-- Row 2 -->
       <div class="row">
         <select id="price" name="price" aria-label="Free or Paid">
           <option value="">Any price</option>
@@ -60,8 +57,6 @@
           <option value="18">18+</option>
         </select>
       </div>
-
-      <!-- Row 3 -->
       <div class="row">
         <select id="mech" name="mech" aria-label="Main mechanism">
           <option value="">Any mechanism</option>
@@ -82,32 +77,26 @@
           <option value="">Any crafting difficulty</option>
         </select>
       </div>
-
-      <!-- Actions -->
       <div class="actions-row">
         <button type="submit">Apply</button>
         <button type="button" id="clear">Clear</button>
       </div>
     </form>
   </header>
-
   <main class="wrap">
     <div id="count" class="count" aria-live="polite"></div>
     <ul id="results" class="grid" aria-label="Game results"></ul>
     <nav id="pager" class="pager" aria-label="Pagination"></nav>
   </main>
-
   <div id="loading" class="loading" aria-live="polite" hidden>
     <div class="panel">
       <div class="spinner" role="status" aria-label="Loading"></div>
       <div class="msg" id="loading-msg">Loading...</div>
     </div>
   </div>
-
   <footer class="wrap">
     <small>Data provided by community submissions • Links point to original hosts</small>
   </footer>
-
-  <script src="/app.js?v=v2025-09-23-19"></script>
+  <script src="/app.js?v=v2025-09-23-20"></script>
 </body>
 </html>
