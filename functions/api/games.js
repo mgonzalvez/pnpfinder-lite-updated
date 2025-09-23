@@ -1,6 +1,4 @@
 // functions/api/games.js
-// Cloudflare Pages Function: Proxies your published Google Sheet CSV to the client.
-// This keeps your Sheet URL secret and avoids CORS issues.
 export async function onRequest(context) {
   const { SHEET_CSV_URL } = context.env;
   if (!SHEET_CSV_URL) {
