@@ -230,13 +230,29 @@ function render(list) {
 
     link.appendChild(body);
     li.appendChild(link);
+
+    const actions = document.createElement("div");
+    actions.className = "actions";
+    const link1 = norm(item[F.link1]);
+    if (link1) {
+      const a1 = document.createElement("a");
+      a1.className = "btn primary";
+      a1.href = link1; a1.target = "_blank"; a1.rel = "noopener";
+      try {
+        a1.textContent = `Open on ${new URL(link1).hostname.replace(/^www\./,'')}`;
+      } catch {
+        a1.textContent = "Open link";
+      }
+      actions.appendChild(a1);
+    }
+    li.appendChild(actions);
+
     frag.appendChild(li);
   });
 
   RESULTS.appendChild(frag);
   renderPager(page, pages);
 }
-
 let fdLast = null;
 
 function draw() {

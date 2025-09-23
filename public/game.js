@@ -84,82 +84,126 @@ function renderDetail(item) {
     return;
   }
 
-  const left = el("div");
-  const right = el("div");
+  const left = document.createElement("div");
+  const right = document.createElement("div");
 
-  // Image
-  const img = el("img", "cover");
+  const img = document.createElement("img");
+  img.className = "cover";
   img.alt = `${norm(item[F.title])} cover`;
   img.loading = "lazy";
   img.src = norm(item[F.image]) || "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
   left.appendChild(img);
 
-  // Title
-  const h1 = el("h1", null, norm(item[F.title]) || "Untitled");
+  const h1 = document.createElement("h1");
+  h1.textContent = norm(item[F.title]) || "Untitled";
 
-  // Meta row
   const { min: pmin, max: pmax } = parsePlayers(item[F.players]);
   const players = `${pmin ?? "?"}–${pmax ?? "?"}p`;
-  const meta = el("div", "meta", `<span>${players}</span><span>${norm(item[F.playtime]) || "-"}</span><span>${normalizePriceType(item[F.priceType])}</span>`);
+  const meta = document.createElement("div");
+  meta.className = "meta";
+  meta.innerHTML = `<span>${players}</span><span>${norm(item[F.playtime]) || "-"}</span><span>${normalizePriceType(item[F.priceType])}</span><span>${norm(item[F.price]) || "-"}</span>`;
 
-  // Byline
-  const designer = norm(item[F.designer]) || "-";
-  const publisher = norm(item[F.publisher]) || "-";
-  const year = norm(item[F.year]) || "-";
-  const byline = el("div", "meta", `<span>Designer: ${designer}</span><span>Publisher: ${publisher}</span><span>Year: ${year}</span>`);
+  const byline = document.createElement("div");
+  byline.className = "meta";
+  byline.innerHTML = [
+    `Designer: ${norm(item[F.designer]) || "-"}`,
+    `Publisher: ${norm(item[F.publisher]) || "-"}`,
+    `Year: ${norm(item[F.year]) || "-"}`,
+    `Age: ${norm(item[F.ageRange]) || "-"}`
+  ].map(s => `<span>${s}</span>`).join("");
 
-  // Chips
-  const chips = el("div", "chips");
+  const chips = document.createElement("div");
+  chips.className = "chips";
   [norm(item[F.mech1]), norm(item[F.mech2]), norm(item[F.mode]), norm(item[F.complexity]), norm(item[F.category])]
     .filter(Boolean)
-    .forEach(text => chips.appendChild(el("span", "chip", text)));
+    .forEach(text => {
+      const s = document.createElement("span");
+      s.className = "chip";
+      s.textContent = text;
+      chips.appendChild(s);
+    });
 
-  // Descriptions
+  const desc = document.createElement("div");
+  desc.className = "section";
   const short = norm(item[F.shortDesc]);
   const long = norm(item[F.description]);
-  const desc = el("div", "section", `${short ? `<p>${short}</p>` : ""}${long ? `<p>${long.replace(/\n/g, "<br/>")}</p>` : ""}`);
+  desc.innerHTML = `${short ? `<p>${short}</p>` : ""}${long ? `<p>${long.replace(/\n/g, "<br/>")}</p>` : ""}`;
 
-  // Build/Components
-  const build = el("div", "section", `
+  const build = document.createElement("div");
+  build.className = "section";
+  build.innerHTML = `
     <h3>Build & Components</h3>
     <p><strong>Crafting Difficulty:</strong> ${norm(item[F.craftLevel]) || "-"}</p>
     <p><strong>Print Components:</strong> ${norm(item[F.printComponents]) || "-"}</p>
     <p><strong>Other Components:</strong> ${norm(item[F.otherComponents]) || "-"}</p>
+  `;
+
+  const misc = document.createElement("div");
+  misc.className = "section";
+  misc.innerHTML = `
+    <h3>Theme & Languages</h3>
+    <p><strong>Theme:</strong> ${norm(item[F.theme]) || "-"}</p>
     <p><strong>Languages:</strong> ${norm(item[F.languages]) || "-"}</p>
-  `);
+  `;
 
-  // Theme
-  const theme = el("div", "section", `<h3>Theme</h3><p>${norm(item[F.theme]) || "-"}</p>`);
-
-  // Links
-  const links = el("div", "actions");
+  const links = document.createElement("div");
+  links.className = "actions";
   const link1 = norm(item[F.link1]);
   const link2 = norm(item[F.link2]);
   if (link1) {
-    const a1 = el("a", "btn primary", `Open on ${domainFromUrl(link1) || "Site"}`);
+    const a1 = document.createElement("a");
+    a1.className = "btn primary";
     a1.href = link1; a1.target = "_blank"; a1.rel = "noopener";
+    try { a1.textContent = `Open on ${new URL(link1).hostname.replace(/^www\./,'')}`; } catch { a1.textContent = "Open link"; }
     links.appendChild(a1);
   }
   if (link2) {
-    const a2 = el("a", "btn", `Alt link (${domainFromUrl(link2) || "Site"})`);
+    const a2 = document.createElement("a");
+    a2.className = "btn";
     a2.href = link2; a2.target = "_blank"; a2.rel = "noopener";
+    try { a2.textContent = `Alt link (${new URL(link2).hostname.replace(/^www\./,'')})`; } catch { a2.textContent = "Alt link"; }
     links.appendChild(a2);
   }
 
-  // Assemble right column
+  const admin = document.createElement("div");
+  admin.className = "section";
+  const curated = norm(item[F.curated]);
+  const dead = norm(item[F.deadlink]);
+  const dateAdded = norm(item[F.dateAdded]);
+  const deadLinkHtml = dead && /^https?:\/\//i.test(dead) ? `<a href="${dead}" target="_blank" rel="noopener">Report a dead link</a>` : (dead || "-");
+  admin.innerHTML = `
+    <h3>Meta</h3>
+    <p><strong>Curated lists:</strong> ${curated || "-"}</p>
+    <p><strong>Report dead link:</strong> ${deadLinkHtml}</p>
+    <p><strong>Date added:</strong> ${dateAdded || "-"}</p>
+  `;
+
+  const table = document.createElement("div");
+  table.className = "section";
+  const entries = Object.entries(item || {});
+  const rows = entries.map(([k, v]) => {
+    const val = (v ?? "").toString().trim();
+    const htmlVal = /^https?:\/\//i.test(val) ? `<a href="${val}" target="_blank" rel="noopener">${val}</a>` : (val || "-");
+    return `<tr><th>${k}</th><td>${htmlVal}</td></tr>`;
+  }).join("");
+  table.innerHTML = `<h3>Full details</h3><table class="kv">${rows}</table>`;
+
   right.appendChild(h1);
   right.appendChild(meta);
   right.appendChild(byline);
   right.appendChild(chips);
   right.appendChild(desc);
   right.appendChild(build);
-  right.appendChild(theme);
+  right.appendChild(misc);
   right.appendChild(links);
+  right.appendChild(admin);
+  right.appendChild(table);
 
-  // Attach to page
   wrap.className = "detail";
   wrap.appendChild(left);
   wrap.appendChild(right);
+}
+
 }
 
 async function load() {
