@@ -373,4 +373,47 @@ RESULTS.addEventListener("click", (e) => {
   if (a) setLoading(true, "Opening game…");
 });
 
-init();
+
+
+
+// Global error beacons to show a visible message instead of a blank page
+window.addEventListener("error", (e) => {
+  try {
+    const box = document.createElement("div");
+    box.style.background = "#241b1b";
+    box.style.border = "1px solid #5c2e2e";
+    box.style.color = "#f3d9d9";
+    box.style.padding = "12px";
+    box.style.borderRadius = "10px";
+    box.style.margin = "10px 0";
+    box.textContent = "Runtime error: " + (e.message || e.error || "Unknown");
+    const mount = document.getElementById("count") || document.body;
+    mount.prepend(box);
+  } catch {}
+});
+window.addEventListener("unhandledrejection", (e) => {
+  try {
+    const box = document.createElement("div");
+    box.style.background = "#241b1b";
+    box.style.border = "1px solid #5c2e2e";
+    box.style.color = "#f3d9d9";
+    box.style.padding = "12px";
+    box.style.borderRadius = "10px";
+    box.style.margin = "10px 0";
+    box.textContent = "Promise error: " + (e.reason && (e.reason.message || e.reason.toString()) || "Unknown");
+    const mount = document.getElementById("count") || document.body;
+    mount.prepend(box);
+  } catch {}
+});
+
+console.log("[PnP] app.js loaded");
+
+// Wrap init behind DOMContentLoaded to avoid timing issues
+(function(){
+  function start(){ try { init(); } catch (e) { console.error(e); } }
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
+})();
