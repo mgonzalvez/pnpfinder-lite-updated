@@ -2,6 +2,69 @@
 (function(){
   "use strict";
 
+// === Facet helpers ===
+function splitTokens(s){
+  var t = (s == null ? "" : String(s));
+  if (!t) return [];
+  return t.split(/[,/;|]/).map(function(x){ return x.trim(); }).filter(Boolean);
+}
+function uniqSort(arr){
+  var m = {}; var out = [];
+  arr.forEach(function(v){ var k = v.toLowerCase(); if (!m[k]) { m[k]=true; out.push(v); } });
+  out.sort(function(a,b){ a=a.toLowerCase(); b=b.toLowerCase(); return a<b?-1:a>b?1:0; });
+  return out;
+}
+function parseMinAge(s){
+  var m = String(s||"").match(/\d+/); return m ? parseInt(m[0],10) : null;
+}
+function extractFacets(list){
+  var mech = [], complexity = [], theme = [], lang = [], years = [], craft = [], curated = [];
+  list.forEach(function(r){
+    var v;
+    v = r[F.mech1]; if (v) mech.push(v);
+    v = r[F.complexity]; if (v) complexity.push(v);
+    v = r[F.theme]; if (v) theme = theme.concat(splitTokens(v));
+    v = r[F.languages]; if (v) lang = lang.concat(splitTokens(v));
+    v = r[F.year]; if (v) years.push(String(v));
+    v = r[F.craftLevel]; if (v) craft.push(v);
+    v = r[F.curated]; if (v) curated = curated.concat(splitTokens(v));
+  });
+  return {
+    mech: uniqSort(mech),
+    complexity: uniqSort(complexity),
+    theme: uniqSort(theme),
+    lang: uniqSort(lang),
+    years: uniqSort(years).sort(function(a,b){ return parseInt(b,10)-parseInt(a,10); }),
+    craft: uniqSort(craft),
+    curated: uniqSort(curated)
+  };
+}
+function fillSelect(id, values, anyLabel){
+  var sel = document.getElementById(id); if (!sel) return;
+  var keep = sel.value;
+  sel.innerHTML = "";
+  var opt0 = document.createElement("option"); opt0.value = ""; opt0.textContent = anyLabel || "Any";
+  sel.appendChild(opt0);
+  values.forEach(function(v){
+    var o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o);
+  });
+  if (keep) sel.value = keep;
+}
+
+// --- Fallback config loader (reads /config.json for direct CSV URL) ---
+function loadConfig(){
+  return fetch("/config.json", { cache: "no-store" })
+    .then(function(r){ if (!r.ok) throw new Error("no config"); return r.json(); })
+    .catch(function(){ return { directCSV: "" }; });
+}
+function fetchCsv(url){
+  return fetch(url, { headers: { "cache-control": "no-cache" }}).then(function(res){
+    if (!res.ok) { var e = new Error("HTTP " + res.status); e.status = res.status; throw e; }
+    return res.text();
+  });
+}
+
+
   // Global beacon so index fallback knows we started
   window.__PNP_READY__ = true;
 
@@ -298,9 +361,18 @@
 
     function loadRows(){
       return ensurePapa().then(function(Papa){
-        return fetch("/api/games", { headers: { "cache-control": "no-cache" }})
-          .then(function(res){ if (!res.ok) throw new Error("API " + res.status); return res.text(); })
-          .then(function(csv){ var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true }); return parsed.data || []; });
+        return fetchCsv("/api/games").then(function(csv){
+          var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true }); return parsed.data || [];
+        }).catch(function(apiErr){
+          return loadConfig().then(function(cfg){
+            if (cfg && cfg.directCSV) {
+              return fetchCsv(cfg.directCSV).then(function(csv){
+                var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true }); return parsed.data || [];
+              });
+            }
+            throw apiErr;
+          });
+        });
       });
     }
 

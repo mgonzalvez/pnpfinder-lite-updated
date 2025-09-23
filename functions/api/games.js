@@ -2,12 +2,13 @@
 export async function onRequest(context) {
   const { SHEET_CSV_URL } = context.env;
   if (!SHEET_CSV_URL) {
-    return new Response("Missing SHEET_CSV_URL", { status: 500 });
+    return new Response("Missing SHEET_CSV_URL (Pages → Settings → Environment variables → Production)", { status: 500 });
   }
   try {
     const upstream = await fetch(SHEET_CSV_URL, { cf: { cacheTtl: 300, cacheEverything: true } });
     if (!upstream.ok) {
-      return new Response(`Upstream error ${upstream.status}`, { status: upstream.status });
+      const text = await upstream.text().catch(() => "");
+      return new Response(`Upstream error ${upstream.status}: ${text.slice(0,200)}`, { status: upstream.status });
     }
     const csv = await upstream.text();
     return new Response(csv, {
@@ -17,6 +18,6 @@ export async function onRequest(context) {
       }
     });
   } catch (err) {
-    return new Response("Fetch error", { status: 502 });
+    return new Response("Fetch error: " + (err && err.message || ""), { status: 502 });
   }
 }

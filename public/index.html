@@ -4,46 +4,86 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PnP Finder (CSV Edition)</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-14" />
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-17" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <header class="wrap">
     <h1>PnP Finder</h1>
-    <p class="tagline">Browse community-submitted print-and-play games. Data backed by your Google Sheet CSV.</p>
+    <p class="tagline">Browse community-submitted print-and-play games. Use filters to narrow your search.</p>
 
     <form id="filters" class="filters" aria-label="Filter games">
-      <input id="q" name="q" type="search" placeholder="Search title, designer, publisher…" aria-label="Search" />
-      <select id="price" name="price" aria-label="Price">
-        <option value="">Any price</option>
-        <option value="free">Free</option>
-        <option value="paid">Paid</option>
-        <option value="name your price">Name Your Price</option>
-      </select>
-      <select id="players" name="players" aria-label="Players">
-        <option value="">Any players</option>
-        <option value="1">Solo (1)</option>
-        <option value="2">2+</option>
-        <option value="3">3+</option>
-        <option value="4">4+</option>
-        <option value="5">5+</option>
-      </select>
-      <select id="playtime" name="playtime" aria-label="Playtime">
-        <option value="">Any length</option>
-        <option value="short">≤ 30 min</option>
-        <option value="medium">31–60 min</option>
-        <option value="long">> 60 min</option>
-      </select>
-      <select id="mode" name="mode" aria-label="Gameplay mode">
-        <option value="">Any mode</option>
-        <option value="solo">Solo</option>
-        <option value="cooperative">Cooperative</option>
-        <option value="competitive">Competitive</option>
-      </select>
-      <input id="mechanism" name="mechanism" type="text" placeholder="Mechanism (e.g., deckbuilding)" aria-label="Mechanism" />
-      <input id="theme" name="theme" type="text" placeholder="Theme (e.g., sci-fi)" aria-label="Theme" />
-      <button type="submit">Apply</button>
-      <button type="button" id="clear">Clear</button>
+      <div class="row">
+        <input id="q" name="q" type="search" placeholder="Search title, designer, publisher..." aria-label="Search" />
+        <select id="curated" name="curated" aria-label="Curated list">
+          <option value="">Any curated list</option>
+        </select>
+        <select id="sort" name="sort" aria-label="Sort by">
+          <option value="relevance">Sort: Relevance</option>
+          <option value="newest">Newest</option>
+          <option value="title">Title A-Z</option>
+          <option value="year">Release Year</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <select id="price" name="price" aria-label="Free or Paid">
+          <option value="">Any price</option>
+          <option value="free">Free</option>
+          <option value="name your price">Name Your Price</option>
+          <option value="paid">Paid</option>
+        </select>
+        <select id="players" name="players" aria-label="Players">
+          <option value="">Any players</option>
+          <option value="1">Solo (1)</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+          <option value="5">5+</option>
+        </select>
+        <select id="playtime" name="playtime" aria-label="Playtime">
+          <option value="">Any length</option>
+          <option value="short"><= 30 min</option>
+          <option value="medium">31-60 min</option>
+          <option value="long">> 60 min</option>
+        </select>
+        <select id="ageMin" name="ageMin" aria-label="Minimum age">
+          <option value="">Any age</option>
+          <option value="6">6+</option>
+          <option value="8">8+</option>
+          <option value="10">10+</option>
+          <option value="12">12+</option>
+          <option value="14">14+</option>
+          <option value="16">16+</option>
+          <option value="18">18+</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <select id="mech" name="mech" aria-label="Main mechanism">
+          <option value="">Any mechanism</option>
+        </select>
+        <select id="complexity" name="complexity" aria-label="Complexity">
+          <option value="">Any complexity</option>
+        </select>
+        <select id="themeSel" name="themeSel" aria-label="Theme">
+          <option value="">Any theme</option>
+        </select>
+        <select id="lang" name="lang" aria-label="Language">
+          <option value="">Any language</option>
+        </select>
+        <select id="year" name="year" aria-label="Release year">
+          <option value="">Any year</option>
+        </select>
+        <select id="craft" name="craft" aria-label="PnP Crafting Challenge">
+          <option value="">Any crafting difficulty</option>
+        </select>
+      </div>
+
+      <div class="row actions-row">
+        <button type="submit">Apply</button>
+        <button type="button" id="clear">Clear</button>
+      </div>
     </form>
   </header>
 
@@ -53,11 +93,10 @@
     <nav id="pager" class="pager" aria-label="Pagination"></nav>
   </main>
 
-  <!-- Loading overlay -->
   <div id="loading" class="loading" aria-live="polite" hidden>
     <div class="panel">
       <div class="spinner" role="status" aria-label="Loading"></div>
-      <div class="msg" id="loading-msg">Loading…</div>
+      <div class="msg" id="loading-msg">Loading...</div>
     </div>
   </div>
 
@@ -65,77 +104,19 @@
     <small>Data provided by community submissions • Links point to original hosts</small>
   </footer>
 
-  <!-- Primary script -->
-  <script src="/app.js?v=v2025-09-23-15"></script>
+  <script src="/app.js?v=v2025-09-23-17"></script>
 
-  <!-- Fallback bootstrap -->
   <script>
   (function(){
     if (!window.__PNP_READY__) window.__PNP_READY__ = false;
-
-    function show(msg) {
-      const el = document.createElement('div');
-      el.style.background = '#241b1b';
-      el.style.border = '1px solid #5c2e2e';
-      el.style.color = '#f3d9d9';
-      el.style.padding = '12px';
-      el.style.borderRadius = '10px';
-      el.style.margin = '10px 0';
-      el.textContent = msg;
-      (document.getElementById('count') || document.body).prepend(el);
+    function show(msg){
+      var el = document.createElement('div');
+      el.style.background = '#241b1b'; el.style.border = '1px solid #5c2e2e'; el.style.color = '#f3d9d9';
+      el.style.padding = '12px'; el.style.borderRadius = '10px'; el.style.margin = '10px 0';
+      el.textContent = msg; (document.getElementById('count') || document.body).prepend(el);
     }
-
-    async function ensurePapa() {
-      if (window.Papa) return window.Papa;
-      await new Promise(r => setTimeout(r, 0));
-      if (window.Papa) return window.Papa;
-      await new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
-        s.async = true; s.onload = resolve; s.onerror = () => reject(new Error('Papa load failed'));
-        document.head.appendChild(s);
-      });
-      return window.Papa;
-    }
-
-    async function fallback() {
-      try {
-        const Papa = await ensurePapa();
-        const res = await fetch('/api/games', { headers: { 'cache-control': 'no-cache' }});
-        if (!res.ok) throw new Error('API ' + res.status);
-        const csv = await res.text();
-        const { data } = Papa.parse(csv, { header: true, skipEmptyLines: true });
-        const list = (data || []).slice(0, 25);
-        const ul = document.getElementById('results');
-        const frag = document.createDocumentFragment();
-        list.forEach(row => {
-          const li = document.createElement('li');
-          li.className = 'card';
-          li.innerHTML = '<div class="body"><div class="title">' + (row['GAME TITLE'] || 'Untitled') + '</div></div>';
-          frag.appendChild(li);
-        });
-        ul.innerHTML = '';
-        ul.appendChild(frag);
-        const count = document.getElementById('count');
-        if (count) count.textContent = 'Showing ' + list.length + ' (fallback)';
-      } catch (e) {
-        show('Fallback failed: ' + (e.message || e.toString()));
-      }
-    }
-
-    function schedule() {
-      setTimeout(function(){
-        if (!window.__PNP_READY__) {
-          show('Primary script not running; loading fallback renderer…');
-          fallback();
-        }
-      }, 600);
-    }
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', schedule, { once: true });
-    } else {
-      schedule();
+    if (document.readyState === 'complete' && !window.__PNP_READY__) {
+      show('Primary script not running; fallback would render here if needed.');
     }
   })();
   </script>

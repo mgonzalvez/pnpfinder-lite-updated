@@ -1,6 +1,19 @@
 /* public/game.js (ASCII-safe) */
 (function(){
   "use strict";
+// --- Fallback config loader (reads /config.json for direct CSV URL) ---
+function loadConfig(){
+  return fetch("/config.json", { cache: "no-store" })
+    .then(function(r){ if (!r.ok) throw new Error("no config"); return r.json(); })
+    .catch(function(){ return { directCSV: "" }; });
+}
+function fetchCsv(url){
+  return fetch(url, { headers: { "cache-control": "no-cache" }}).then(function(res){
+    if (!res.ok) { var e = new Error("HTTP " + res.status); e.status = res.status; throw e; }
+    return res.text();
+  });
+}
+
 
   function norm(v){ return (v == null ? "" : String(v)).trim(); }
   function lower(v){ return norm(v).toLowerCase(); }
@@ -215,9 +228,20 @@
 
   function loadRows(){
     return ensurePapa().then(function(Papa){
-      return fetch("/api/games", { headers: { "cache-control": "no-cache" }})
-        .then(function(res){ if (!res.ok) throw new Error("API " + res.status); return res.text(); })
-        .then(function(csv){ var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true }); return (parsed.data || []).filter(function(r){ return r && Object.values(r).some(function(v){ return (v != null && String(v).trim() !== ""); }); }); });
+      return fetchCsv("/api/games").then(function(csv){
+        var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+        return (parsed.data || []).filter(function(r){ return r && Object.values(r).some(function(v){ return (v != null && String(v).trim() !== ""); }); });
+      }).catch(function(apiErr){
+        return loadConfig().then(function(cfg){
+          if (cfg && cfg.directCSV) {
+            return fetchCsv(cfg.directCSV).then(function(csv){
+              var parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+              return (parsed.data || []).filter(function(r){ return r && Object.values(r).some(function(v){ return (v != null && String(v).trim() !== ""); }); });
+            });
+          }
+          throw apiErr;
+        });
+      });
     });
   }
 
