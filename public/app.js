@@ -8,6 +8,23 @@ const PAGER = document.getElementById("pager");
 const PAGE_SIZE = 25;
 let currentPage = 1;
 
+
+const LOADING = document.getElementById("loading");
+const LOADING_MSG = document.getElementById("loading-msg");
+let loadingCount = 0;
+function setLoading(on, msg = "Loading…") {
+  if (!LOADING) return;
+  if (on) {
+    loadingCount++;
+    LOADING_MSG && (LOADING_MSG.textContent = msg);
+    LOADING.hidden = false;
+  } else {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) LOADING.hidden = true;
+  }
+}
+
+
 const F = {
   title: "GAME TITLE",
   designer: "DESIGNER",
@@ -262,27 +279,49 @@ function draw() {
 }
 
 async function load() {
+  setLoading(true, "Loading games…");
+  const cacheKey = "pnp_rows_v1";
+  let usedCache = false;
+  try {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      rows = JSON.parse(cached);
+      fdLast = new FormData(FORM);
+      currentPage = 1;
+      draw();
+      usedCache = true;
+    }
+  } catch {}
+
   const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
   const csv = await res.text();
   const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
   rows = parsed.data;
   fdLast = new FormData(FORM);
   currentPage = 1;
-  draw();
-}
+  if (!usedCache) draw();
+} finally { setLoading(false); }
 
 FORM.addEventListener("submit", (e) => {
   e.preventDefault();
   fdLast = new FormData(FORM);
   currentPage = 1;
-  draw();
-});
+  if (!usedCache) draw();
+} finally { setLoading(false); });
 
 CLEAR.addEventListener("click", () => {
   FORM.reset();
   fdLast = new FormData(FORM);
   currentPage = 1;
-  draw();
-});
+  if (!usedCache) draw();
+} finally { setLoading(false); });
 
 load();
+
+
+RESULTS.addEventListener("click", (e) => {
+  const a = e.target.closest("a.card-link");
+  if (a) {
+    setLoading(true, "Opening game…");
+  }
+});

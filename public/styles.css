@@ -64,3 +64,12 @@ a { color: var(--accent); }
 .kv th, .kv td { border:1px solid #2a2c31; padding:.5rem .6rem; vertical-align: top; }
 .kv th { text-align:left; width: 28%; color: var(--muted); background:#121317; }
 .kv tr:nth-child(even) td { background:#101116; }
+
+
+/* Loading overlay */
+.loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.35); backdrop-filter: blur(2px); z-index: 9999; }
+.loading[hidden] { display: none !important; }
+.loading .panel { display:flex; flex-direction:column; align-items:center; gap:.6rem; background: #121317; border:1px solid #24262b; padding: 1rem 1.2rem; border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.35); }
+.spinner { width: 36px; height: 36px; border: 3px solid #2a2c31; border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg);} }
+.loading .msg { color: var(--text); }

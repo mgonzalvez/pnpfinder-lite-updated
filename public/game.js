@@ -1,4 +1,20 @@
-// public/game.js (robust)
+// public/game.js
+
+const LOADING = document.getElementById("loading");
+const LOADING_MSG = document.getElementById("loading-msg");
+let loadingCount = 0;
+function setLoading(on, msg = "Loading…") {
+  if (!LOADING) return;
+  if (on) {
+    loadingCount++;
+    LOADING_MSG && (LOADING_MSG.textContent = msg);
+    LOADING.hidden = false;
+  } else {
+    loadingCount = Math.max(0, loadingCount - 1);
+    if (loadingCount === 0) LOADING.hidden = true;
+  }
+}
+ (robust)
 const F = {
   title: "GAME TITLE",
   designer: "DESIGNER",
@@ -175,16 +191,24 @@ function renderDetail(item, debugNote) {
 }
 
 async function load() {
+  setLoading(true, "Loading game…");
+  const cacheKey = "pnp_rows_v1";
+
   const elWrap = document.getElementById("game");
   const slug = new URLSearchParams(location.search).get("slug");
   if (!slug) { elWrap.innerHTML = "<p>Missing slug.</p>"; return; }
 
   try {
-    const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
-    if (!res.ok) throw new Error("API error " + res.status);
-    const csv = await res.text();
-    const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-    const rows = (parsed.data || []).filter(r => r && Object.values(r).some(v => (v ?? "").toString().trim() !== ""));
+    let rows;
+    try { const cached = sessionStorage.getItem(cacheKey); if (cached) rows = JSON.parse(cached); } catch {}
+    if (!rows) {
+      const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
+      if (!res.ok) throw new Error("API error " + res.status);
+      const csv = await res.text();
+      const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+      rows = (parsed.data || []).filter(r => r && Object.values(r).some(v => (v ?? "").toString().trim() !== ""));
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(rows)); } catch {}
+    }
 
     // Primary match: exact slug
     let row = rows.find(r => buildSlug(r) === slug);
@@ -210,7 +234,11 @@ async function load() {
   } catch (e) {
     console.error(e);
     elWrap.innerHTML = "<p>Failed to load game.</p>";
-  }
+  } finally { setLoading(false); }
 }
+
+// faster Back link
+const back = document.querySelector('a.back');
+if (back) back.addEventListener('click', (e) => { e.preventDefault(); setLoading(true, "Returning…"); if (history.length > 1) { history.back(); } else { location.href = "/"; } });
 
 load();
