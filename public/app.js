@@ -1,4 +1,5 @@
-// public/app.js
+\
+/* public/app.js (safe) */
 const RESULTS = document.getElementById("results");
 const COUNT = document.getElementById("count");
 const FORM = document.getElementById("filters");
@@ -8,7 +9,7 @@ const PAGER = document.getElementById("pager");
 const PAGE_SIZE = 25;
 let currentPage = 1;
 
-
+// Loading overlay helpers
 const LOADING = document.getElementById("loading");
 const LOADING_MSG = document.getElementById("loading-msg");
 let loadingCount = 0;
@@ -16,7 +17,7 @@ function setLoading(on, msg = "Loading…") {
   if (!LOADING) return;
   if (on) {
     loadingCount++;
-    LOADING_MSG && (LOADING_MSG.textContent = msg);
+    if (LOADING_MSG) LOADING_MSG.textContent = msg;
     LOADING.hidden = false;
   } else {
     loadingCount = Math.max(0, loadingCount - 1);
@@ -24,6 +25,35 @@ function setLoading(on, msg = "Loading…") {
   }
 }
 
+// If something fatal happens, show it on screen so users aren't stuck on a blank page
+function showFatal(msg) {
+  const box = document.createElement("div");
+  box.style.background = "#241b1b";
+  box.style.border = "1px solid #5c2e2e";
+  box.style.color = "#f3d9d9";
+  box.style.padding = "12px";
+  box.style.borderRadius = "10px";
+  box.style.margin = "10px 0";
+  box.textContent = msg;
+  (COUNT || document.body).prepend(box);
+}
+
+// Ensure Papa is available (handles odd script execution ordering)
+async function ensurePapa() {
+  if (window.Papa) return window.Papa;
+  await new Promise(r => setTimeout(r, 0));
+  if (window.Papa) return window.Papa;
+  await new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js";
+    s.async = true;
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("Failed to load PapaParse"));
+    document.head.appendChild(s);
+  });
+  if (!window.Papa) throw new Error("PapaParse not available");
+  return window.Papa;
+}
 
 const F = {
   title: "GAME TITLE",
@@ -255,11 +285,7 @@ function render(list) {
       const a1 = document.createElement("a");
       a1.className = "btn primary";
       a1.href = link1; a1.target = "_blank"; a1.rel = "noopener";
-      try {
-        a1.textContent = `Open on ${new URL(link1).hostname.replace(/^www\./,'')}`;
-      } catch {
-        a1.textContent = "Open link";
-      }
+      try { a1.textContent = `Open on ${new URL(link1).hostname.replace(/^www\./,'')}`; } catch { a1.textContent = "Open link"; }
       actions.appendChild(a1);
     }
     li.appendChild(actions);
@@ -270,6 +296,7 @@ function render(list) {
   RESULTS.appendChild(frag);
   renderPager(page, pages);
 }
+
 let fdLast = null;
 
 function draw() {
@@ -278,50 +305,72 @@ function draw() {
   render(filtered);
 }
 
-async function load() {
+async function loadRows() {
+  const Papa = await ensurePapa();
+  const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
+  if (!res.ok) throw new Error(`API returned ${res.status}`);
+  const csv = await res.text();
+  const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
+  return parsed.data;
+}
+
+async function init() {
   setLoading(true, "Loading games…");
   const cacheKey = "pnp_rows_v1";
   let usedCache = false;
   try {
     const cached = sessionStorage.getItem(cacheKey);
     if (cached) {
-      rows = JSON.parse(cached);
-      fdLast = new FormData(FORM);
-      currentPage = 1;
-      draw();
-      usedCache = true;
+      try { rows = JSON.parse(cached) || []; usedCache = true; } catch {}
     }
-  } catch {}
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      rows = await loadRows();
+      try { sessionStorage.setItem(cacheKey, JSON.stringify(rows)); } catch {}
+    }
+    fdLast = new FormData(FORM);
+    currentPage = 1;
+    draw();
 
-  const res = await fetch("/api/games", { headers: { "cache-control": "no-cache" }});
-  const csv = await res.text();
-  const parsed = Papa.parse(csv, { header: true, skipEmptyLines: true });
-  rows = parsed.data;
-  fdLast = new FormData(FORM);
-  currentPage = 1;
-  if (!usedCache) draw();
-} finally { setLoading(false); }
+    if (usedCache) {
+      try {
+        const fresh = await loadRows();
+        const freshStr = JSON.stringify(fresh);
+        const cacheStr = JSON.stringify(rows);
+        if (freshStr !== cacheStr) {
+          rows = fresh;
+          try { sessionStorage.setItem(cacheKey, freshStr); } catch {}
+          draw();
+        }
+      } catch (e) {
+        console.warn("Background refresh failed:", e);
+      }
+    }
+  } catch (e) {
+    console.error(e);
+    showFatal("Failed to load games. " + e.message);
+  } finally {
+    setLoading(false);
+  }
+}
 
+// UI events
 FORM.addEventListener("submit", (e) => {
   e.preventDefault();
   fdLast = new FormData(FORM);
   currentPage = 1;
-  if (!usedCache) draw();
-} finally { setLoading(false); });
+  draw();
+});
 
 CLEAR.addEventListener("click", () => {
   FORM.reset();
   fdLast = new FormData(FORM);
   currentPage = 1;
-  if (!usedCache) draw();
-} finally { setLoading(false); });
-
-load();
-
+  draw();
+});
 
 RESULTS.addEventListener("click", (e) => {
   const a = e.target.closest("a.card-link");
-  if (a) {
-    setLoading(true, "Opening game…");
-  }
+  if (a) setLoading(true, "Opening game…");
 });
+
+init();
