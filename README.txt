@@ -50,3 +50,4 @@ These match your sheet exactly; if a header changes, update `public/app.js`:
 - Filters available: text (title/designer/publisher), price type, players, playtime band, mechanism text, theme text, gameplay mode.
 - Action buttons show the domain of each download link for clarity.
 - If you later move from CSV to a database (Cloudflare D1), only the data source layer changes; the UI can stay.
+- edited by Martin
