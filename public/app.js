@@ -1,3 +1,4 @@
+window.__PNP_READY__ = false;
 \
 /* public/app.js (safe) */
 const RESULTS = document.getElementById("results");
@@ -410,7 +411,7 @@ console.log("[PnP] app.js loaded");
 
 // Wrap init behind DOMContentLoaded to avoid timing issues
 (function(){
-  function start(){ try { init(); } catch (e) { console.error(e); } }
+  function start(){ try { window.__PNP_READY__ = true; init(); } catch (e) { console.error(e); } }
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", start, { once: true });
   } else {

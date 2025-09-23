@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PnP Finder (CSV Edition)</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-9?v2025-09-23-2" />
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
-  <script src="/app.js?v=v2025-09-23-13"></script>
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-14" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <header class="wrap">
     <h1>PnP Finder</h1>
     <p class="tagline">Browse community-submitted print-and-play games. Data backed by your Google Sheet CSV.</p>
+
     <form id="filters" class="filters" aria-label="Filter games">
       <input id="q" name="q" type="search" placeholder="Search title, designer, publisher…" aria-label="Search" />
       <select id="price" name="price" aria-label="Price">
@@ -52,16 +52,92 @@
     <ul id="results" class="grid" aria-label="Game results"></ul>
     <nav id="pager" class="pager" aria-label="Pagination"></nav>
   </main>
-    <div id="loading" class="loading" aria-live="polite" hidden>
-      <div class="panel">
-        <div class="spinner" role="status" aria-label="Loading"></div>
-        <div class="msg" id="loading-msg">Loading…</div>
-      </div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading" aria-live="polite" hidden>
+    <div class="panel">
+      <div class="spinner" role="status" aria-label="Loading"></div>
+      <div class="msg" id="loading-msg">Loading…</div>
     </div>
-    
+  </div>
 
   <footer class="wrap">
     <small>Data provided by community submissions • Links point to original hosts</small>
   </footer>
+
+  <!-- Primary script -->
+  <script src="/app.js?v=v2025-09-23-14"></script>
+
+  <!-- Fallback bootstrap -->
+  <script>
+  (function(){
+    if (!window.__PNP_READY__) window.__PNP_READY__ = false;
+
+    function show(msg) {
+      const el = document.createElement('div');
+      el.style.background = '#241b1b';
+      el.style.border = '1px solid #5c2e2e';
+      el.style.color = '#f3d9d9';
+      el.style.padding = '12px';
+      el.style.borderRadius = '10px';
+      el.style.margin = '10px 0';
+      el.textContent = msg;
+      (document.getElementById('count') || document.body).prepend(el);
+    }
+
+    async function ensurePapa() {
+      if (window.Papa) return window.Papa;
+      await new Promise(r => setTimeout(r, 0));
+      if (window.Papa) return window.Papa;
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js';
+        s.async = true; s.onload = resolve; s.onerror = () => reject(new Error('Papa load failed'));
+        document.head.appendChild(s);
+      });
+      return window.Papa;
+    }
+
+    async function fallback() {
+      try {
+        const Papa = await ensurePapa();
+        const res = await fetch('/api/games', { headers: { 'cache-control': 'no-cache' }});
+        if (!res.ok) throw new Error('API ' + res.status);
+        const csv = await res.text();
+        const { data } = Papa.parse(csv, { header: true, skipEmptyLines: true });
+        const list = (data || []).slice(0, 25);
+        const ul = document.getElementById('results');
+        const frag = document.createDocumentFragment();
+        list.forEach(row => {
+          const li = document.createElement('li');
+          li.className = 'card';
+          li.innerHTML = '<div class="body"><div class="title">' + (row['GAME TITLE'] || 'Untitled') + '</div></div>';
+          frag.appendChild(li);
+        });
+        ul.innerHTML = '';
+        ul.appendChild(frag);
+        const count = document.getElementById('count');
+        if (count) count.textContent = 'Showing ' + list.length + ' (fallback)';
+      } catch (e) {
+        show('Fallback failed: ' + (e.message || e.toString()));
+      }
+    }
+
+    function schedule() {
+      setTimeout(function(){
+        if (!window.__PNP_READY__) {
+          show('Primary script not running; loading fallback renderer…');
+          fallback();
+        }
+      }, 600);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', schedule, { once: true });
+    } else {
+      schedule();
+    }
+  })();
+  </script>
 </body>
 </html>
