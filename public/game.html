@@ -4,9 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Game • PnP Finder</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-9?v=v2025-09-23-8?v2025-09-23-2" />
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js" defer></script>
-  <script src="/game.js?v=v2025-09-23-9?v=v2025-09-23-8?v2025-09-23-2" type="module" defer></script>
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-15" />
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
   <header class="wrap">
@@ -15,9 +14,19 @@
   <main class="wrap">
     <article id="game" class="detail"></article>
   </main>
-<div id="loading" class="loading" aria-live="polite" hidden><div class="panel"><div class="spinner" role="status" aria-label="Loading"></div><div class="msg" id="loading-msg">Loading…</div></div></div>
+
+  <!-- Loading overlay -->
+  <div id="loading" class="loading" aria-live="polite" hidden>
+    <div class="panel">
+      <div class="spinner" role="status" aria-label="Loading"></div>
+      <div class="msg" id="loading-msg">Loading game...</div>
+    </div>
+  </div>
+
   <footer class="wrap">
-    <small>Data provided by community submissions • Links point to original hosts</small>
+    <small>Data provided by community submissions &bull; Links point to original hosts</small>
   </footer>
+
+  <script src="/game.js?v=v2025-09-23-15"></script>
 </body>
 </html>
