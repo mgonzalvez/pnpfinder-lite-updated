@@ -86,3 +86,34 @@ a { color:#69c4ff; } /* brighter than dark blue for contrast */
 .kv { border-collapse:collapse; width:100%; }
 .kv th, .kv td { border:1px solid #333; padding:.4rem .5rem; text-align:left; }
 .kv th { width:28%; opacity:.85; }
+
+
+/* v18: fix primary button contrast and filter layout */
+a.btn.primary { background:#1e8e3e; color:#ffffff !important; border-color:#256f3a; }
+a.btn { color:#111; }
+
+/* Make filters use responsive grid, not squished left */
+.filters { margin-top:.5rem; }
+.filters .row { 
+  display:grid; 
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); 
+  gap:.5rem; 
+  align-items:center;
+}
+/* Search spans two columns on larger screens for breathing room */
+@media (min-width: 900px) {
+  .filters .row:first-child input[type="search"] { grid-column: span 2; }
+}
+.filters input[type="search"], .filters select, .filters button { 
+  width:100%; 
+  padding:.6rem .7rem; 
+  border-radius:.6rem; 
+  border:1px solid #333; 
+  background:#121212; 
+  color:#eee; 
+}
+.filters .actions-row { 
+  display:flex; 
+  justify-content:flex-end; 
+  gap:.5rem; 
+}

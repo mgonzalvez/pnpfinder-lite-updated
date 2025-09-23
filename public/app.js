@@ -3,6 +3,22 @@
   "use strict";
 
 // === Facet helpers ===
+
+// --- Build facet dropdowns once (safe to call multiple times) ---
+var __facets_built = false;
+function buildFacetsOnce() {
+  if (!rows || !rows.length) return;
+  var facets = extractFacets(rows);
+  fillSelect("mech", facets.mech, "Any mechanism");
+  fillSelect("complexity", facets.complexity, "Any complexity");
+  fillSelect("themeSel", facets.theme, "Any theme");
+  fillSelect("lang", facets.lang, "Any language");
+  fillSelect("year", facets.years, "Any year");
+  fillSelect("craft", facets.craft, "Any crafting difficulty");
+  fillSelect("curated", facets.curated, "Any curated list");
+  __facets_built = true;
+}
+
 function splitTokens(s){
   var t = (s == null ? "" : String(s));
   if (!t) return [];
