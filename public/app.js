@@ -107,6 +107,23 @@ function fetchCsv(url){
   }
 
   onReady(function init(){
+
+// Build facet dropdowns from data
+function buildFacets(list){
+  try {
+    var facets = extractFacets(list || rows || []);
+    fillSelect("mech", facets.mech, "Any mechanism");
+    fillSelect("complexity", facets.complexity, "Any complexity");
+    fillSelect("themeSel", facets.theme, "Any theme");
+    fillSelect("lang", facets.lang, "Any language");
+    fillSelect("year", facets.years, "Any year");
+    fillSelect("craft", facets.craft, "Any crafting difficulty");
+    fillSelect("curated", facets.curated, "Any curated list");
+  } catch (e) {
+    console.warn("Facet build failed:", e);
+  }
+}
+
     var RESULTS = document.getElementById("results");
     var COUNT = document.getElementById("count");
     var FORM = document.getElementById("filters");

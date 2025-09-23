@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>PnP Finder (CSV Edition)</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-18" />
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-19" />
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 </head>
 <body>
@@ -13,6 +13,7 @@
     <p class="tagline">Browse community-submitted print-and-play games. Use filters to narrow your search.</p>
 
     <form id="filters" class="filters" aria-label="Filter games">
+      <!-- Row 1 -->
       <div class="row">
         <input id="q" name="q" type="search" placeholder="Search title, designer, publisher..." aria-label="Search" />
         <select id="curated" name="curated" aria-label="Curated list">
@@ -26,6 +27,7 @@
         </select>
       </div>
 
+      <!-- Row 2 -->
       <div class="row">
         <select id="price" name="price" aria-label="Free or Paid">
           <option value="">Any price</option>
@@ -43,9 +45,9 @@
         </select>
         <select id="playtime" name="playtime" aria-label="Playtime">
           <option value="">Any length</option>
-          <option value="short"><= 30 min</option>
-          <option value="medium">31-60 min</option>
-          <option value="long">> 60 min</option>
+          <option value="short">&le; 30 min</option>
+          <option value="medium">31–60 min</option>
+          <option value="long">&gt; 60 min</option>
         </select>
         <select id="ageMin" name="ageMin" aria-label="Minimum age">
           <option value="">Any age</option>
@@ -59,6 +61,7 @@
         </select>
       </div>
 
+      <!-- Row 3 -->
       <div class="row">
         <select id="mech" name="mech" aria-label="Main mechanism">
           <option value="">Any mechanism</option>
@@ -80,7 +83,8 @@
         </select>
       </div>
 
-      <div class="row actions-row">
+      <!-- Actions -->
+      <div class="actions-row">
         <button type="submit">Apply</button>
         <button type="button" id="clear">Clear</button>
       </div>
@@ -104,21 +108,6 @@
     <small>Data provided by community submissions • Links point to original hosts</small>
   </footer>
 
-  <script src="/app.js?v=v2025-09-23-18"></script>
-
-  <script>
-  (function(){
-    if (!window.__PNP_READY__) window.__PNP_READY__ = false;
-    function show(msg){
-      var el = document.createElement('div');
-      el.style.background = '#241b1b'; el.style.border = '1px solid #5c2e2e'; el.style.color = '#f3d9d9';
-      el.style.padding = '12px'; el.style.borderRadius = '10px'; el.style.margin = '10px 0';
-      el.textContent = msg; (document.getElementById('count') || document.body).prepend(el);
-    }
-    if (document.readyState === 'complete' && !window.__PNP_READY__) {
-      show('Primary script not running; fallback would render here if needed.');
-    }
-  })();
-  </script>
+  <script src="/app.js?v=v2025-09-23-19"></script>
 </body>
 </html>

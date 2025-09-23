@@ -117,3 +117,32 @@ a.btn { color:#111; }
   justify-content:flex-end; 
   gap:.5rem; 
 }
+
+
+/* v19 layout fixes */
+.filters { margin-top:.5rem; }
+.filters .row {
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap:.5rem;
+  align-items:center;
+}
+/* Actions row is flex aligned right */
+.filters .actions-row {
+  display:flex;
+  justify-content:flex-end;
+  gap:.5rem;
+  margin-top:.5rem;
+}
+/* Make search field span two columns on wide screens */
+@media (min-width: 900px) {
+  .filters .row:first-child input[type="search"] { grid-column: span 2; }
+}
+.filters input[type="search"], .filters select, .filters button {
+  width:100%;
+  padding:.6rem .7rem;
+  border-radius:.6rem;
+  border:1px solid #333;
+  background:#121212;
+  color:#eee;
+}
