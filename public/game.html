@@ -1,32 +1,76 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Game • PnP Finder</title>
-  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-16" />
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Game Details - PnP Finder</title>
+  <link rel="stylesheet" href="/styles.css?v=v2025-09-23-21">
 </head>
 <body>
   <header class="wrap">
-    <a href="/" class="back">&larr; Back to list</a>
+    <h1>Game Details</h1>
+    <a href="/" class="back-btn">Back to games list</a>
   </header>
+
   <main class="wrap">
-    <article id="game" class="detail"></article>
+    <div id="game-details" class="game-details">
+      <div class="game-header">
+        <img id="game-image" class="game-image" alt="Game Image">
+        <div class="game-info">
+          <h2 id="game-title">Game Title</h2>
+          <div class="game-meta">
+            <span id="game-price">Price</span> | 
+            <span id="game-players">Players</span> | 
+            <span id="game-playtime">Playtime</span> | 
+            <span id="game-age">Age Range</span>
+          </div>
+          <p id="game-short-desc" class="short-desc">Game Short Description</p>
+          <a id="game-download" href="#" class="btn primary">Download</a>
+        </div>
+      </div>
+      <div class="game-details-table">
+        <h3>Full Game Details</h3>
+        <table>
+          <tbody>
+            <tr>
+              <td><strong>Description</strong></td>
+              <td id="game-description">Game long description goes here...</td>
+            </tr>
+            <tr>
+              <td><strong>Mechanisms</strong></td>
+              <td id="game-mechanisms">Game Mechanisms</td>
+            </tr>
+            <tr>
+              <td><strong>Complexity</strong></td>
+              <td id="game-complexity">Game Complexity</td>
+            </tr>
+            <tr>
+              <td><strong>Theme</strong></td>
+              <td id="game-theme">Game Theme</td>
+            </tr>
+            <tr>
+              <td><strong>Languages</strong></td>
+              <td id="game-languages">Languages</td>
+            </tr>
+            <tr>
+              <td><strong>PnP Crafting Challenge</strong></td>
+              <td id="game-crafting-challenge">Crafting Difficulty</td>
+            </tr>
+            <tr>
+              <td><strong>Curated List</strong></td>
+              <td id="game-curated-list">Curated List</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </main>
 
-  <!-- Loading overlay -->
-  <div id="loading" class="loading" aria-live="polite" hidden>
-    <div class="panel">
-      <div class="spinner" role="status" aria-label="Loading"></div>
-      <div class="msg" id="loading-msg">Loading game...</div>
-    </div>
-  </div>
-
   <footer class="wrap">
-    <small>Data provided by community submissions &bull; Links point to original hosts</small>
+    <small>Data provided by community submissions • Links point to original hosts</small>
   </footer>
 
-  <script src="/game.js?v=v2025-09-23-16"></script>
+  <script src="/game.js?v=v2025-09-23-21"></script>
 </body>
 </html>
+
