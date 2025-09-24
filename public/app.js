@@ -1,15 +1,23 @@
-/* public/app.js v20 (ASCII-only) */
+/* public/app.js v21 (ASCII-only)
+   Enhancements:
+   1) Auto-apply filters on change and live-search input (debounced).
+   2) Remember filters between visits (localStorage).
+   3) Shareable filtered URLs (read from and update the querystring).
+*/
 (function(){
   "use strict";
   window.__PNP_READY__ = true;
 
+  // ---------- small helpers ----------
   function onReady(fn){ if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fn, {once:true}); else fn(); }
   function norm(v){ return (v == null ? "" : String(v)).trim(); }
   function lower(v){ return norm(v).toLowerCase(); }
   function splitTokens(s){ var t = norm(s); if (!t) return []; return t.split(/[,/;|]/).map(function(x){ return x.trim(); }).filter(Boolean); }
   function uniq(arr){ var m = {}; return arr.filter(function(v){ var k = v.toLowerCase(); if (m[k]) return false; m[k]=1; return true; }); }
   function uniqSort(arr){ return uniq(arr).sort(function(a,b){ a=a.toLowerCase(); b=b.toLowerCase(); return a<b?-1:a>b?1:0; }); }
+  function debounce(fn, ms){ var t; return function(){ var ctx=this, args=arguments; clearTimeout(t); t=setTimeout(function(){ fn.apply(ctx,args); }, ms||0); }; }
 
+  // ---------- DOM refs & state ----------
   var RESULTS, COUNT, FORM, CLEAR, PAGER, LOADING, LOADING_MSG;
   var PAGE_SIZE = 25;
   var currentPage = 1;
@@ -17,6 +25,7 @@
   var filtered = [];
   var fdLast = null;
 
+  // ---------- CSV column map (must match your CSV headers) ----------
   var F = {
     title: "GAME TITLE",
     designer: "DESIGNER",
@@ -40,13 +49,14 @@
     printComponents: "PRINT COMPONENTS",
     otherComponents: "OTHER COMPONENTS",
     languages: "LANGUAGES",
-    year: "RELEASE YEAR",
+    year: "Release Year" in ({}).constructor ? "RELEASE YEAR" : "RELEASE YEAR", // keep as exact string
     image: "IMAGE",
     curated: "CURATED LISTS",
     deadlink: "REPORT DEAD LINK",
     dateAdded: "DATE ADDED"
   };
 
+  // ---------- UX helpers ----------
   function setLoading(on, msg){
     if (!LOADING) return;
     if (on) { if (LOADING_MSG) LOADING_MSG.textContent = msg || "Loading..."; LOADING.hidden = false; }
@@ -79,6 +89,7 @@
     return "";
   }
 
+  // ---------- CSV loading ----------
   function ensurePapa(){
     return new Promise(function(resolve, reject){
       if (window.Papa) return resolve(window.Papa);
@@ -120,6 +131,7 @@
     });
   }
 
+  // ---------- Facets ----------
   function extractFacets(list){
     var mech = [], complexity = [], theme = [], lang = [], years = [], craft = [], curated = [];
     list.forEach(function(r){
@@ -162,6 +174,7 @@
     fillSelect("curated", f.curated, "Any curated list");
   }
 
+  // ---------- Filter & URL state ----------
   function matchesFilters(item, fd){
     var q = lower(fd.get("q"));
     var price = lower(fd.get("price"));
@@ -224,6 +237,43 @@
     return true;
   }
 
+  function formToObject(){
+    var fd = new FormData(FORM), obj = {};
+    fd.forEach(function(v,k){ obj[k] = v; });
+    return obj;
+  }
+  function formToQuery(){
+    var obj = formToObject();
+    var params = new URLSearchParams();
+    Object.keys(obj).forEach(function(k){
+      var v = obj[k];
+      if (v) params.set(k, v);
+    });
+    return params.toString();
+  }
+  function applyFromQuery(){
+    var qs = new URLSearchParams(location.search);
+    qs.forEach(function(v,k){ var el = document.getElementById(k); if (el) el.value = v; });
+  }
+  function restoreSavedFilters(){
+    try {
+      var saved = localStorage.getItem("pnp_filters_v1");
+      if (!saved) return;
+      var obj = JSON.parse(saved);
+      Object.keys(obj).forEach(function(k){
+        var el = document.getElementById(k);
+        if (el) el.value = obj[k];
+      });
+    } catch(e){}
+  }
+  function saveFilters(){
+    try {
+      var obj = formToObject();
+      localStorage.setItem("pnp_filters_v1", JSON.stringify(obj));
+    } catch(e){}
+  }
+
+  // ---------- Pagination & render ----------
   function paginate(list, page, pageSize){
     var total = list.length;
     var pages = Math.max(1, Math.ceil(total / pageSize));
@@ -293,10 +343,12 @@
   }
 
   function draw(){
+    // filter
     var list = rows.slice();
     fdLast = new FormData(FORM);
     list = list.filter(function(r){ return matchesFilters(r, fdLast); });
 
+    // sort
     var sortSel = fdLast.get("sort") || "relevance";
     if (sortSel === "newest") {
       list.sort(function(a,b){ var da = new Date(a[F.dateAdded]||0).getTime(); var db = new Date(b[F.dateAdded]||0).getTime(); return db-da; });
@@ -305,10 +357,18 @@
     } else if (sortSel === "year") {
       list.sort(function(a,b){ var ya=parseInt(a[F.year]||"0",10); var yb=parseInt(b[F.year]||"0",10); return (yb-ya)||0; });
     }
+
     filtered = list;
     render(filtered);
+
+    // save filters and update shareable URL
+    saveFilters();
+    var q = formToQuery();
+    var url = q ? ("?"+q) : location.pathname;
+    try { history.replaceState(null, "", url); } catch(e){}
   }
 
+  // ---------- boot ----------
   onReady(function init(){
     RESULTS = document.getElementById("results");
     COUNT = document.getElementById("count");
@@ -318,6 +378,10 @@
     LOADING = document.getElementById("loading");
     LOADING_MSG = document.getElementById("loading-msg");
 
+    // Restore saved filters first, then allow URL to override
+    restoreSavedFilters();
+    applyFromQuery();
+
     setLoading(true, "Loading games...");
     var cacheKey = "pnp_rows_v1";
     var usedCache = false;
@@ -325,9 +389,11 @@
 
     (rows && rows.length ? Promise.resolve(rows) : loadRows().then(function(data){ rows = data; try { sessionStorage.setItem(cacheKey, JSON.stringify(rows)); } catch(e){}; return rows; }))
       .then(function(){
-        buildFacets(rows);
+        buildFacets(rows);      // fills dropdowns, preserves current control values
         currentPage = 1;
-        draw();
+        draw();                 // first render
+
+        // background refresh if we started from cache
         if (usedCache) {
           loadRows().then(function(fresh){
             var freshStr = JSON.stringify(fresh||[]);
@@ -349,6 +415,11 @@
 
     if (FORM) {
       FORM.addEventListener("submit", function(e){ e.preventDefault(); currentPage = 1; draw(); });
+      // Auto-apply on any dropdown change
+      FORM.addEventListener("change", function(e){ if (!e.target) return; currentPage = 1; draw(); });
+      // Live-search with debounce
+      var q = document.getElementById("q");
+      if (q) q.addEventListener("input", debounce(function(){ currentPage = 1; draw(); }, 200));
     }
     if (CLEAR) {
       CLEAR.addEventListener("click", function(){ try { FORM.reset(); } catch(e){} currentPage = 1; draw(); });
