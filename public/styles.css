@@ -162,3 +162,27 @@ a {
 @keyframes spin { 
   to { transform: rotate(360deg); } 
 }
+
+/* Center the pager (pagination) container */
+#pager {
+  display: flex;
+  justify-content: center;
+  gap: 10px; /* Adjust the space between pagination buttons */
+  padding: 1rem 0;
+}
+
+/* Style for pagination buttons */
+#pager a {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ddd;
+  background-color: #333;
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  text-align: center;
+}
+
+/* Add hover effect for pagination buttons */
+#pager a:hover {
+  background-color: #555;
+}
